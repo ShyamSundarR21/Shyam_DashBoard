@@ -3,9 +3,7 @@
 require('dotenv').config();
 const express      = require('express');
 const cors         = require('cors');
-const helmet       = require('helmet');
 const morgan       = require('morgan');
-const rateLimit    = require('express-rate-limit');
 const http         = require('http');
 const WebSocket    = require('ws');
 const path         = require('path');
@@ -63,21 +61,12 @@ if (process.env.NODE_ENV === 'development') {
   }, 3000); // Every 3 seconds
 }
 
-// ─── Middleware ───────────────────────────────────────────────────────────────
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE'], allowedHeaders: ['Content-Type','Authorization','x-device-secret'] }));
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true }));
-app.use(morgan('combined'));
+// ─── Middleware (Simplified for Demo) ────────────────────────────────────────
+app.use(cors({ origin: '*' }));
+app.use(express.json());
+app.use(morgan('dev'));
 
-// Rate limiting
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 500, message: 'Too many requests' });
-app.use('/api/', limiter);
-
-// ─── Serve Frontend ───────────────────────────────────────────────────────────
-app.use(express.static(path.join(__dirname, '../frontend')));
-
-// ─── API Routes ───────────────────────────────────────────────────────────────
+// ─── API Routes (Auth Bypassed for Demo) ──────────────────────────────────────
 app.use('/api/sensors', sensorsRouter);
 app.use('/api/ledger',  ledgerRouter);
 app.use('/api/waste',   wasteRouter);
@@ -110,24 +99,7 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// ─── Station Info ─────────────────────────────────────────────────────────────
-app.get('/api/stations', (req, res) => {
-  res.json({
-    success: true,
-    stations: [
-      { stationId: 'STATION-001', name: 'Main Kitchen', location: 'Ground Floor', status: 'ONLINE', sensors: ['RFID','LOAD_CELL','ULTRASONIC'] },
-      { stationId: 'STATION-002', name: 'Prep Area',    location: 'Ground Floor', status: 'ONLINE', sensors: ['RFID','LOAD_CELL','ULTRASONIC'] },
-      { stationId: 'STATION-003', name: 'Storage Room', location: 'Basement',     status: 'IDLE',   sensors: ['RFID','LOAD_CELL','ULTRASONIC'] },
-    ],
-  });
-});
-
-// ─── Fallback to Frontend ─────────────────────────────────────────────────────
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
-});
-
-// ─── Error Handler ────────────────────────────────────────────────────────────
+// ─── Error Handler (Simplified) ───────────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('💥 Error:', err.message);
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });

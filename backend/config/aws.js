@@ -4,12 +4,12 @@ require('dotenv').config();
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient } = require('@aws-sdk/lib-dynamodb');
 
-// ─── AWS SDK Configuration ───────────────────────────────────────────────────
+// ─── AWS SDK Configuration (Hardcoded Defaults for Demo) ──────────────────────
 const awsConfig = {
   region: process.env.AWS_REGION || 'us-east-1',
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
   },
 };
 
@@ -32,16 +32,12 @@ const TABLES = {
 
 // ─── IoT Core Config ─────────────────────────────────────────────────────────
 const IOT_CONFIG = {
-  endpoint:  process.env.IOT_ENDPOINT,
+  endpoint:  process.env.IOT_ENDPOINT || 'demo.iot.endpoint',
   clientId:  process.env.IOT_CLIENT_ID || 'dinewave-server',
   topics: {
-    sensors:  process.env.IOT_TOPIC_SENSORS   || 'dinewave/sensors/#',
-    waste:    process.env.IOT_TOPIC_WASTE      || 'dinewave/waste',
-    sanitize: process.env.IOT_TOPIC_SANITIZE   || 'dinewave/sanitize',
-    rfid:     'dinewave/rfid',
-    loadcell: 'dinewave/loadcell',
-    ultrasonic:'dinewave/ultrasonic',
-    uvmist:   'dinewave/uvmist',
+    sensors:  'dinewave/sensors/#',
+    waste:    'dinewave/waste',
+    sanitize: 'dinewave/sanitize',
   },
 };
 

@@ -260,32 +260,37 @@ aws ec2 run-instances \
   --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=DineWave-Backend}]'
 ```
 
-### 5b. SSH & Deploy
+### 5b. SSH & Deploy (GitHub Workflow)
+
+Instead of manual uploads, we use the GitHub repository we just set up:
 
 ```bash
-# SSH into instance
+# SSH into your instance
 ssh -i your-key.pem ec2-user@YOUR_EC2_PUBLIC_IP
 
-# Install Node.js & Docker
-sudo dnf install -y nodejs npm docker git
-sudo systemctl start docker
+# 1. Update system and install dependencies
+sudo dnf update -y
+sudo dnf install -y docker git
+sudo systemctl enable --now docker
 sudo usermod -aG docker ec2-user
+# Logout and login again for group changes to take effect
 
-# Clone/upload your project
-git clone YOUR_REPO_URL /home/ec2-user/dinewave
-cd /home/ec2-user/dinewave
+# 2. Clone the repository
+git clone https://github.com/ShyamSundarR21/Shyam_DashBoard.git
+cd Shyam_DashBoard
 
-# Create .env file
+# 3. Configure Environment Variables
+# Create .env based on the example
 cp .env.example .env
-nano .env   # fill in your AWS credentials + IoT endpoint
+nano .env
+# Fill in:
+# - AWS_REGION (us-east-1)
+# - IOT_ENDPOINT (from Step 3d)
+# - JWT_SECRET (any secure string)
+# Note: AWS credentials are NOT needed if using an IAM Role.
 
-# Install & start
-npm install
-npm start
-
-# OR use Docker
-docker build -t dinewave .
-docker run -d -p 3000:3000 -p 8080:8080 --env-file .env dinewave
+# 4. Start the Application
+docker-compose up -d --build
 ```
 
 ### 5c. Keep Running with PM2
