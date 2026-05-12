@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  dinewave:
+    build: .
+    ports:
+      - "3000:3000"
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - DYNAMODB_WASTE_TABLE=dinewave-waste-entries
+      - DYNAMODB_SENSOR_TABLE=dinewave-sensor-readings
+      - DYNAMODB_LEDGER_TABLE=dinewave-immutable-ledger
+      - DYNAMODB_ALERTS_TABLE=dinewave-alerts
+      - IOT_ENDPOINT=${IOT_ENDPOINT}
+      - JWT_SECRET=${JWT_SECRET}
+    restart: unless-stopped

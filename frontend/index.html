@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="DineWave — Automated Restaurant Waste Audit Station. Real-time sensor fusion dashboard for food loss tracking, hygiene monitoring, and immutable audit ledger." />
+  <title>DineWave | Waste Audit Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- ─── Sidebar ──────────────────────────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" stroke="url(#grad)" stroke-width="2.5"/>
+          <path d="M12 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="url(#grad)" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="20" cy="24" r="3" fill="url(#grad)"/>
+          <path d="M16 30h8" stroke="url(#grad)" stroke-width="2" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="grad" x1="0" y1="0" x2="40" y2="40">
+              <stop offset="0%" stop-color="#6ee7b7"/>
+              <stop offset="100%" stop-color="#3b82f6"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">DineWave</span>
+        <span class="brand-sub">Waste Audit Station</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="dashboard" id="nav-dashboard">
+        <span class="nav-icon">⊞</span><span class="nav-label">Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-page="sensors" id="nav-sensors">
+        <span class="nav-icon">📡</span><span class="nav-label">Live Sensors</span>
+        <span class="nav-badge live-pulse" id="ws-badge">LIVE</span>
+      </a>
+      <a href="#" class="nav-item" data-page="waste" id="nav-waste">
+        <span class="nav-icon">🗑️</span><span class="nav-label">Waste Log</span>
+      </a>
+      <a href="#" class="nav-item" data-page="ledger" id="nav-ledger">
+        <span class="nav-icon">🔐</span><span class="nav-label">Immutable Ledger</span>
+      </a>
+      <a href="#" class="nav-item" data-page="sanitize" id="nav-sanitize">
+        <span class="nav-icon">🧹</span><span class="nav-label">Sanitization</span>
+      </a>
+      <a href="#" class="nav-item" data-page="alerts" id="nav-alerts">
+        <span class="nav-icon">🔔</span><span class="nav-label">Alerts</span>
+        <span class="nav-badge danger" id="alert-count-badge">0</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-station">
+      <div class="station-dot online" id="station-dot"></div>
+      <div class="station-info">
+        <span class="station-name" id="station-name">STATION-001</span>
+        <span class="station-status" id="station-status">Online · ESP32-WROOM-32</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── Main Content ─────────────────────────────────────────────────────── -->
+  <main class="main" id="main-content">
+
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 id="page-title">Dashboard Overview</h1>
+        <span class="topbar-time" id="live-clock"></span>
+      </div>
+      <div class="topbar-right">
+        <select class="station-select" id="station-select">
+          <option value="STATION-001">📍 Main Kitchen</option>
+          <option value="STATION-002">📍 Prep Area</option>
+          <option value="STATION-003">📍 Storage Room</option>
+        </select>
+        <button class="btn btn-primary" id="refresh-btn" onclick="app.refresh()">⟳ Refresh</button>
+        <div class="ws-indicator" id="ws-indicator">
+          <span class="ws-dot"></span>
+          <span id="ws-status-text">Connecting…</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- PAGE: Dashboard ─────────────────────────────────────────────────────  -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="page active" id="page-dashboard">
+
+      <!-- Hero Stats -->
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card primary" id="card-entries">
+          <div class="stat-icon">🗑️</div>
+          <div class="stat-body">
+            <span class="stat-value" id="stat-entries">—</span>
+            <span class="stat-label">Total Waste Events</span>
+            <span class="stat-delta" id="delta-entries">Today</span>
+          </div>
+          <div class="stat-sparkline" id="sparkline-entries"></div>
+        </div>
+        <div class="stat-card danger" id="card-loss">
+          <div class="stat-icon">💸</div>
+          <div class="stat-body">
+            <span class="stat-value" id="stat-loss">—</span>
+            <span class="stat-label">Financial Loss (7d)</span>
+            <span class="stat-delta" id="delta-loss">USD</span>
+          </div>
+        </div>
+        <div class="stat-card warning" id="card-bin">
+          <div class="stat-icon">📦</div>
+          <div class="stat-body">
+            <span class="stat-value" id="stat-bin">—</span>
+            <span class="stat-label">Bin Capacity</span>
+            <span class="stat-delta" id="delta-bin">Main Bin</span>
+          </div>
+          <div class="bin-progress-wrap"><div class="bin-progress-bar" id="bin-progress"></div></div>
+        </div>
+        <div class="stat-card success" id="card-hygiene">
+          <div class="stat-icon">🧼</div>
+          <div class="stat-body">
+            <span class="stat-value" id="stat-hygiene">—</span>
+            <span class="stat-label">Hygiene Score</span>
+            <span class="stat-delta" id="delta-hygiene">Live</span>
+          </div>
+        </div>
+        <div class="stat-card info" id="card-weight">
+          <div class="stat-icon">⚖️</div>
+          <div class="stat-body">
+            <span class="stat-value" id="stat-weight">—</span>
+            <span class="stat-label">Total Weight (7d)</span>
+            <span class="stat-delta">kg</span>
+          </div>
+        </div>
+        <div class="stat-card purple" id="card-blocks">
+          <div class="stat-icon">🔐</div>
+          <div class="stat-body">
+            <span class="stat-value" id="stat-blocks">—</span>
+            <span class="stat-label">Ledger Blocks</span>
+            <span class="stat-delta success-text" id="ledger-integrity">Verifying…</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="charts-row">
+        <div class="chart-card wide">
+          <div class="chart-header">
+            <h3>Daily Financial Loss</h3>
+            <div class="chart-controls">
+              <button class="chip active" onclick="charts.setDays(7)">7d</button>
+              <button class="chip" onclick="charts.setDays(14)">14d</button>
+              <button class="chip" onclick="charts.setDays(30)">30d</button>
+            </div>
+          </div>
+          <div class="chart-body"><canvas id="chart-daily-loss"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><h3>Waste Type Breakdown</h3></div>
+          <div class="chart-body"><canvas id="chart-waste-types"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Live Feed Row -->
+      <div class="live-row">
+        <!-- Real-time Sensor Panel -->
+        <div class="sensor-panel">
+          <div class="panel-header">
+            <h3>⚡ Live Sensor Feed</h3>
+            <span class="live-indicator"><span class="pulse-dot"></span>LIVE</span>
+          </div>
+          <div class="sensors-grid">
+            <!-- RFID -->
+            <div class="sensor-box rfid-box" id="sensor-rfid">
+              <div class="sensor-icon-wrap rfid-icon">📶</div>
+              <h4>RFID Reader</h4>
+              <div class="sensor-value" id="rfid-tag">—</div>
+              <div class="sensor-meta" id="rfid-type">Waste Type: —</div>
+              <div class="sensor-signal">
+                <span>Signal</span>
+                <div class="signal-bars"><span class="bar active"></span><span class="bar active"></span><span class="bar active"></span><span class="bar"></span><span class="bar"></span></div>
+              </div>
+            </div>
+            <!-- Load Cell -->
+            <div class="sensor-box loadcell-box" id="sensor-loadcell">
+              <div class="sensor-icon-wrap lc-icon">⚖️</div>
+              <h4>Load Cell</h4>
+              <div class="sensor-value" id="lc-weight">— g</div>
+              <div class="sensor-meta" id="lc-loss">Loss: $—</div>
+              <div class="weight-bar-wrap"><div class="weight-bar" id="lc-bar"></div></div>
+            </div>
+            <!-- Ultrasonic -->
+            <div class="sensor-box ultra-box" id="sensor-ultra">
+              <div class="sensor-icon-wrap us-icon">📡</div>
+              <h4>Ultrasonic</h4>
+              <div class="sensor-value" id="us-dist">— cm</div>
+              <div class="sensor-meta" id="us-cap">Capacity: —%</div>
+              <div class="capacity-ring" id="capacity-ring">
+                <svg viewBox="0 0 100 100">
+                  <circle class="ring-bg" cx="50" cy="50" r="40"/>
+                  <circle class="ring-fill" id="ring-fill" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2"/>
+                </svg>
+                <span class="ring-label" id="ring-label">0%</span>
+              </div>
+            </div>
+            <!-- UV/Mist -->
+            <div class="sensor-box uv-box" id="sensor-uv">
+              <div class="sensor-icon-wrap uv-icon">☀️</div>
+              <h4>UV-C / Mist</h4>
+              <div class="uv-status-row">
+                <div class="uv-chip" id="uv-chip">UV-C <span class="chip-off">OFF</span></div>
+                <div class="uv-chip mist-chip" id="mist-chip">Mist <span class="chip-off">OFF</span></div>
+              </div>
+              <div class="sensor-meta" id="uv-meta">Sanitization Idle</div>
+              <button class="btn btn-sm btn-uv" onclick="app.triggerSanitize('UVC')">Activate UV-C</button>
+              <button class="btn btn-sm btn-mist" onclick="app.triggerSanitize('MIST')">Activate Mist</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Events -->
+        <div class="events-panel">
+          <div class="panel-header">
+            <h3>📋 Recent Waste Events</h3>
+            <button class="btn btn-ghost" onclick="app.loadWastePage()">View All →</button>
+          </div>
+          <div class="events-list" id="events-list">
+            <div class="empty-state">Loading events…</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- PAGE: Live Sensors ──────────────────────────────────────────────────  -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="page-sensors">
+      <div class="page-intro">
+        <h2>Live Sensor Data</h2>
+        <p>Real-time telemetry from ESP32-WROOM-32 sensor fusion station</p>
+      </div>
+      <div class="charts-row">
+        <div class="chart-card wide">
+          <div class="chart-header"><h3>Weight Over Time (Load Cell)</h3></div>
+          <div class="chart-body"><canvas id="chart-weight-live"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header"><h3>Bin Capacity History</h3></div>
+          <div class="chart-body"><canvas id="chart-bin-live"></canvas></div>
+        </div>
+      </div>
+      <div class="sensor-detail-grid" id="sensor-detail-grid">
+        <!-- populated by JS -->
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- PAGE: Waste Log ─────────────────────────────────────────────────────  -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="page-waste">
+      <div class="page-intro">
+        <h2>Waste Event Log</h2>
+        <p>All RFID-identified waste detection events with financial impact</p>
+      </div>
+      <div class="table-toolbar">
+        <div class="filter-group">
+          <select id="waste-type-filter" onchange="app.filterWaste()">
+            <option value="">All Waste Types</option>
+            <option value="FOOD">🍕 Food</option>
+            <option value="PLASTIC">♻️ Plastic</option>
+            <option value="ORGANIC">🌿 Organic</option>
+            <option value="LIQUID">💧 Liquid</option>
+            <option value="HAZARDOUS">⚠️ Hazardous</option>
+            <option value="PAPER">📄 Paper</option>
+            <option value="METAL">🔩 Metal</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="app.addMockWasteEvent()">+ Simulate Event</button>
+      </div>
+      <div class="data-table-wrap">
+        <table class="data-table" id="waste-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>RFID Tag</th>
+              <th>Waste Type</th>
+              <th>Weight (g)</th>
+              <th>Financial Loss</th>
+              <th>Bin Capacity</th>
+              <th>Sorted To</th>
+              <th>Sanitized</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="waste-table-body">
+            <tr><td colspan="9" class="empty-state">Loading waste events…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- PAGE: Immutable Ledger ──────────────────────────────────────────────  -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="page-ledger">
+      <div class="page-intro">
+        <h2>Immutable Audit Ledger</h2>
+        <p>Blockchain-style SHA-256 hash chain — tamper-evident, permanently archived</p>
+      </div>
+      <div class="ledger-controls">
+        <div class="integrity-banner" id="integrity-banner">
+          <span class="integrity-icon">🔐</span>
+          <span id="integrity-text">Verifying chain integrity…</span>
+        </div>
+        <div class="ledger-actions">
+          <button class="btn btn-primary" onclick="app.verifyLedger()">🔍 Verify Integrity</button>
+          <button class="btn btn-ghost" onclick="app.exportLedger()">⬇ Export JSON</button>
+        </div>
+      </div>
+      <div class="blockchain-view" id="blockchain-view">
+        <!-- populated by JS -->
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- PAGE: Sanitization ──────────────────────────────────────────────────  -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="page-sanitize">
+      <div class="page-intro">
+        <h2>Sanitization Control</h2>
+        <p>UV-C lamp and Mist sprayer management for the waste audit station</p>
+      </div>
+      <div class="sanitize-grid">
+        <div class="sanitize-card uvc-card">
+          <div class="sanitize-top">
+            <div class="sanitize-orb uvc-orb" id="uvc-orb">☀️</div>
+            <h3>UV-C Germicidal Lamp</h3>
+            <p>265nm wavelength — destroys bacteria, viruses, mold spores on contact</p>
+          </div>
+          <div class="sanitize-stats">
+            <div class="s-stat"><span>Sessions Today</span><strong id="uvc-count">—</strong></div>
+            <div class="s-stat"><span>Total Duration</span><strong id="uvc-duration">—</strong></div>
+            <div class="s-stat"><span>Last Activated</span><strong id="uvc-last">—</strong></div>
+          </div>
+          <div class="sanitize-actions">
+            <button class="btn btn-uvc btn-lg" id="uvc-btn" onclick="app.triggerSanitize('UVC')">⚡ Activate UV-C (30s)</button>
+            <div class="countdown" id="uvc-countdown"></div>
+          </div>
+        </div>
+        <div class="sanitize-card mist-card">
+          <div class="sanitize-top">
+            <div class="sanitize-orb mist-orb" id="mist-orb">💧</div>
+            <h3>Antiseptic Mist Sprayer</h3>
+            <p>Micro-droplet disinfectant mist — covers all surfaces and eliminates odors</p>
+          </div>
+          <div class="sanitize-stats">
+            <div class="s-stat"><span>Sessions Today</span><strong id="mist-count">—</strong></div>
+            <div class="s-stat"><span>Total Duration</span><strong id="mist-duration">—</strong></div>
+            <div class="s-stat"><span>Last Activated</span><strong id="mist-last">—</strong></div>
+          </div>
+          <div class="sanitize-actions">
+            <button class="btn btn-mist btn-lg" id="mist-btn" onclick="app.triggerSanitize('MIST')">💦 Activate Mist (10s)</button>
+            <div class="countdown" id="mist-countdown"></div>
+          </div>
+        </div>
+        <div class="sanitize-card sort-card">
+          <div class="sanitize-top">
+            <div class="sanitize-orb sort-orb">⚙️</div>
+            <h3>Sorting Motor Control</h3>
+            <p>Autonomous waste sorting to segregated bins by RFID-identified type</p>
+          </div>
+          <div class="bin-routes-grid" id="bin-routes">
+            <div class="bin-route"><span class="bin-label food">🍕 FOOD</span><span class="bin-arrow">→</span><span class="bin-target">BIN_ORGANIC</span></div>
+            <div class="bin-route"><span class="bin-label plastic">♻️ PLASTIC</span><span class="bin-arrow">→</span><span class="bin-target">BIN_RECYCLABLE</span></div>
+            <div class="bin-route"><span class="bin-label liquid">💧 LIQUID</span><span class="bin-arrow">→</span><span class="bin-target">BIN_LIQUID</span></div>
+            <div class="bin-route"><span class="bin-label hazard">⚠️ HAZARDOUS</span><span class="bin-arrow">→</span><span class="bin-target">BIN_HAZARDOUS</span></div>
+            <div class="bin-route"><span class="bin-label metal">🔩 METAL</span><span class="bin-arrow">→</span><span class="bin-target">BIN_RECYCLABLE</span></div>
+            <div class="bin-route"><span class="bin-label organic">🌿 ORGANIC</span><span class="bin-arrow">→</span><span class="bin-target">BIN_ORGANIC</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- PAGE: Alerts ────────────────────────────────────────────────────────  -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="page" id="page-alerts">
+      <div class="page-intro">
+        <h2>Active Alerts</h2>
+        <p>Real-time operational alerts from sensor thresholds and anomaly detection</p>
+      </div>
+      <div class="alerts-list" id="alerts-list">
+        <div class="empty-state">Loading alerts…</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast Notifications -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay hidden" id="loading-overlay">
+    <div class="spinner"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/websocket.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
