@@ -1,18 +1,18 @@
 // src/App.jsx
 import { useState, useEffect } from 'react'
-import { Cpu, Menu, X } from 'lucide-react'
+import { Trash2, Menu, X } from 'lucide-react'
 import Hero            from './components/Hero'
-import ProblemSection  from './components/ProblemSection'
-import SolutionsSection from './components/SolutionsSection'
+import Dashboard       from './components/Dashboard'
+import WasteSummary    from './components/WasteSummary'
+import Ledger          from './components/Ledger'
 import TechStack       from './components/TechStack'
-import KioskDemo       from './components/KioskDemo'
 import Footer          from './components/Footer'
 
 const NAV = [
-  { label: 'Problems',  href: '#solutions' },
-  { label: 'Solutions', href: '#solutions' },
-  { label: 'Tech',      href: '#solutions' },
-  { label: 'Demo',      href: '#kiosk-demo' },
+  { label: 'Dashboard',  href: '#dashboard' },
+  { label: 'Waste Stats', href: '#waste' },
+  { label: 'Ledger',     href: '#ledger' },
+  { label: 'Tech',       href: '#tech' },
 ]
 
 export default function App() {
@@ -34,10 +34,10 @@ export default function App() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.3)' }}>
-              <Cpu size={15} className="text-neon-cyan" />
+              style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)' }}>
+              <Trash2 size={15} className="text-green-500" />
             </div>
-            <span className="font-display font-bold text-white">SmartKiosk<span style={{ color: '#00f5ff' }}>.ai</span></span>
+            <span className="font-display font-bold text-white">DineWave<span style={{ color: '#22c55e' }}>.ai</span></span>
           </div>
 
           {/* Desktop nav */}
@@ -48,10 +48,10 @@ export default function App() {
                 {n.label}
               </a>
             ))}
-            <a href="#kiosk-demo"
+            <a href="#dashboard"
               className="text-xs font-mono font-semibold px-4 py-2 rounded-lg transition-all hover:opacity-90"
-              style={{ background: '#00f5ff', color: '#050508' }}>
-              Live Demo
+              style={{ background: '#22c55e', color: '#050508' }}>
+              Live Dashboard
             </a>
           </div>
 
@@ -76,10 +76,10 @@ export default function App() {
 
       {/* Sections */}
       <Hero />
-      <ProblemSection />
-      <SolutionsSection />
+      <Dashboard />
+      <WasteSummary />
+      <Ledger />
       <TechStack />
-      <KioskDemo />
       <Footer />
     </div>
   )

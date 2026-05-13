@@ -13,6 +13,22 @@ const { autoSanitize }       = require('../services/sanitizationService');
 let broadcast = null;
 const setBroadcast = (fn) => { broadcast = fn; };
 
+// ─── GET /api/sensors ─────────────────────────────────────────────────────────
+// Returns current sensor data for dashboard
+router.get('/', async (req, res) => {
+  try {
+    const stationId = req.query.stationId || 'STATION-001';
+    const reading   = await db.getLatestSensorReading(stationId);
+    if (!reading) {
+      return res.json({ success: true, message: 'No readings yet', data: mockSensorReading(stationId) });
+    }
+    res.json({ success: true, data: reading });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ─── GET /api/sensors/latest ──────────────────────────────────────────────────
 router.get('/latest', async (req, res) => {
   try {

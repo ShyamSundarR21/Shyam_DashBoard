@@ -20,7 +20,7 @@ const alertsRouter  = require('./routes/alerts');
 
 const app    = express();
 const server = http.createServer(app);
-const PORT   = process.env.PORT || 3000;
+const PORT   = process.env.PORT || 4000;
 const WS_PORT = process.env.WS_PORT || 8080;
 
 // ─── WebSocket Server ─────────────────────────────────────────────────────────
@@ -43,23 +43,36 @@ wss.on('connection', (ws) => {
   ws.on('close', () => console.log('🔌 WebSocket client disconnected'));
 });
 
-// Start mock live sensor feed in development
-if (process.env.NODE_ENV === 'development') {
-  setInterval(() => {
-    const reading = {
-      type: 'SENSOR_UPDATE',
-      payload: {
-        stationId: 'STATION-001',
-        timestamp: new Date().toISOString(),
-        rfid: { active: Math.random() > 0.5, wasteType: ['FOOD','PLASTIC','ORGANIC'][Math.floor(Math.random()*3)], signalStrength: -45 },
-        loadCell: { weightGrams: Math.floor(Math.random()*2000), weightKg: +(Math.random()*2).toFixed(2) },
-        ultrasonic: { binCapacityPercent: Math.floor(Math.random()*100), binStatus: 'NORMAL' },
-        environment: { temperature: +(22+Math.random()*5).toFixed(1), humidity: Math.floor(45+Math.random()*40), hygieneScore: Math.floor(70+Math.random()*30) },
+// Start mock live sensor feed (always in demo mode)
+setInterval(() => {
+  const types = ['FOOD', 'PLASTIC', 'ORGANIC'];
+  const reading = {
+    type: 'SENSOR_UPDATE',
+    payload: {
+      stationId: 'STATION-001',
+      timestamp: new Date().toISOString(),
+      rfid: { 
+        active: Math.random() > 0.3, 
+        wasteType: types[Math.floor(Math.random()*3)], 
+        signalStrength: -45 - Math.floor(Math.random() * 20)
       },
-    };
-    broadcast(reading);
-  }, 3000); // Every 3 seconds
-}
+      loadCell: { 
+        weightGrams: Math.floor(Math.random()*2000), 
+        weightKg: parseFloat((Math.random()*2).toFixed(2)) 
+      },
+      ultrasonic: { 
+        binCapacityPercent: Math.floor(Math.random()*100), 
+        binStatus: 'NORMAL' 
+      },
+      environment: { 
+        temperature: parseFloat((22+Math.random()*5).toFixed(1)), 
+        humidity: Math.floor(45+Math.random()*40), 
+        hygieneScore: Math.floor(70+Math.random()*30) 
+      },
+    },
+  };
+  broadcast(reading);
+}, 3000); // Every 3 seconds
 
 // ─── Middleware (Simplified for Demo) ────────────────────────────────────────
 app.use(cors({ origin: '*' }));
@@ -111,10 +124,15 @@ async function bootstrap() {
     console.log('🚀 DineWave Backend starting...');
 
     // Initialize DynamoDB tables
-    if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_ACCESS_KEY_ID !== 'YOUR_ACCESS_KEY_ID') {
+    const hasAwsConfigured = process.env.AWS_ACCESS_KEY_ID &&
+      process.env.AWS_SECRET_ACCESS_KEY &&
+      process.env.AWS_REGION &&
+      process.env.AWS_ACCESS_KEY_ID !== 'YOUR_ACCESS_KEY_ID';
+
+    if (hasAwsConfigured) {
       await createTablesIfNotExist();
     } else {
-      console.log('⚠️  AWS credentials not set — running in local/mock mode');
+      console.log('⚠️  AWS credentials not set or incomplete — running in local/mock mode');
     }
 
     server.listen(PORT, () => {

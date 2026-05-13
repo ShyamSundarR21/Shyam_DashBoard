@@ -10,7 +10,20 @@ router.get('/', async (req, res) => {
     const stationId = req.query.stationId || 'STATION-001';
     const limit     = Math.min(parseInt(req.query.limit) || 50, 500);
     const blocks    = await db.getLedger(stationId, limit);
-    res.json({ success: true, count: blocks.length, data: blocks });
+    
+    // Format blocks as expected by frontend
+    const data = blocks.map((block, idx) => ({
+      id: block.entryId || `ENTRY-${String(idx + 1).padStart(6, '0')}`,
+      timestamp: block.timestamp,
+      wasteType: block.data?.wasteType || block.wasteType || 'UNKNOWN',
+      weight: block.data?.weight || 0,
+      cost: block.data?.cost || 0,
+      hash: block.blockHash,
+      hygieneScore: block.data?.environment?.hygieneScore || 75,
+      blockNumber: block.blockNumber,
+    }));
+    
+    res.json({ success: true, count: data.length, data });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

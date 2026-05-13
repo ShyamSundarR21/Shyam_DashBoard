@@ -1,20 +1,20 @@
 // src/components/TechStack.jsx
 import { TECH_STACK } from '../data/pitch'
-import { Camera, Cpu, Monitor, Printer } from 'lucide-react'
+import { Radio, Zap, Cloud, MonitorPlay } from 'lucide-react'
 
-const ICONS = [Camera, Cpu, Monitor, Printer]
+const ICONS = [Radio, Zap, Cloud, MonitorPlay]
 
 export default function TechStack() {
   return (
-    <section className="py-24 px-6 bg-ink-800/50">
+    <section id="tech" className="py-24 px-6 bg-ink-800/50">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-14">
           <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-3">Technical Blueprint</p>
           <h2 className="font-display text-4xl font-bold text-white mb-3">
-            Implementation<br /><span style={{ color: '#39ff14' }}>Architecture</span>
+            DineWave<br /><span style={{ color: '#22c55e' }}>System Architecture</span>
           </h2>
           <p className="text-zinc-400 text-sm max-w-md mx-auto">
-            Sensor fusion → AI processing → adaptive output → reward loop. Four layers, one pipeline.
+            Sensor fusion → Data processing → Cloud storage → Real-time dashboard. Four layers, complete waste audit.
           </p>
         </div>
 
@@ -22,7 +22,7 @@ export default function TechStack() {
         <div className="relative">
           {/* Connector line */}
           <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-px -translate-y-1/2"
-            style={{ background: 'linear-gradient(90deg, #00f5ff33, #39ff1433, #ffb80033, #ff2d7833)' }} />
+            style={{ background: 'linear-gradient(90deg, #22c55e33, #3b82f633, #a855f733, #f59e0b33)' }} />
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             {TECH_STACK.map((layer, i) => {
@@ -62,14 +62,14 @@ export default function TechStack() {
         </div>
 
         {/* Closing pitch quote */}
-        <div className="mt-16 border border-neon-cyan/20 rounded-2xl p-8 bg-neon-cyan/5 text-center">
+        <div className="mt-16 border border-green-600/20 rounded-2xl p-8 bg-green-950/10 text-center">
           <p className="font-display text-lg md:text-xl font-semibold text-white leading-relaxed max-w-3xl mx-auto">
-            "This project solves the retail crisis by transforming the checkout from a{' '}
-            <span style={{ color: '#ff2d78' }}>cost center</span> into a{' '}
-            <span style={{ color: '#39ff14' }}>revenue engine</span>.
-            By using Computer Vision to identify intent, we solve the Expiry Problem,
-            the Queue Problem, and the Relevance Problem through one single,{' '}
-            <span style={{ color: '#00f5ff' }}>intelligent physical kiosk.</span>"
+            "DineWave transforms waste from a <span style={{ color: '#ef4444' }}>hidden cost center</span> into a{' '}
+            <span style={{ color: '#22c55e' }}>measured, auditable asset.</span>
+            Using <span style={{ color: '#3b82f6' }}>sensor fusion</span> and{' '}
+            <span style={{ color: '#a855f7' }}>blockchain-style immutable ledgers</span>, restaurants now have{' '}
+            <span style={{ color: '#22c55e' }}>complete visibility</span> into their waste patterns, financial impact,
+            and compliance obligations."
           </p>
         </div>
       </div>
