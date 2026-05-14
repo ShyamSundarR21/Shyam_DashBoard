@@ -1,43 +1,86 @@
-import { useState, useEffect } from 'react'
-import { Activity, Zap, Droplets, Wind, AlertCircle } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Activity, Zap, Droplets, Wind, CircleAlert as AlertCircle } from 'lucide-react'
+
+const WASTE_TYPES = ['FOOD', 'PLASTIC', 'ORGANIC']
+
+function generateMockReading() {
+  const binPct = Math.floor(Math.random() * 100)
+  const wKg = parseFloat((Math.random() * 2).toFixed(2))
+  return {
+    stationId: 'STATION-001',
+    timestamp: new Date().toISOString(),
+    rfid: {
+      active: true,
+      wasteType: WASTE_TYPES[Math.floor(Math.random() * 3)],
+      signalStrength: -45 - Math.floor(Math.random() * 20),
+    },
+    loadCell: {
+      weightGrams: Math.round(wKg * 1000),
+      weightKg: wKg,
+    },
+    ultrasonic: {
+      binCapacityPercent: binPct,
+      binStatus: binPct > 85 ? 'CRITICAL' : binPct > 60 ? 'WARNING' : 'NORMAL',
+    },
+    environment: {
+      temperature: parseFloat((22 + Math.random() * 5).toFixed(1)),
+      humidity: Math.floor(45 + Math.random() * 40),
+      hygieneScore: Math.floor(70 + Math.random() * 30),
+    },
+  }
+}
 
 export default function Dashboard() {
   const [sensorData, setSensorData] = useState(null)
   const [connected, setConnected] = useState(false)
+  const [demoMode, setDemoMode] = useState(false)
+  const fallbackTimer = useRef(null)
+  const demoInterval = useRef(null)
+
+  function startDemoMode() {
+    setDemoMode(true)
+    setSensorData(generateMockReading())
+    demoInterval.current = setInterval(() => {
+      setSensorData(generateMockReading())
+    }, 3000)
+  }
 
   useEffect(() => {
-    // Connect to WebSocket
-    const ws = new WebSocket('ws://localhost:8080')
-    
-    ws.onopen = () => {
-      setConnected(true)
-      console.log('✅ Connected to DineWave Live Feed')
-    }
-    
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data)
-        if (data.type === 'SENSOR_UPDATE') {
-          setSensorData(data.payload)
-        }
-      } catch (e) {
-        console.error('WebSocket parse error:', e)
+    fallbackTimer.current = setTimeout(() => {
+      if (!connected) startDemoMode()
+    }, 10000)
+
+    let ws
+    try {
+      ws = new WebSocket('ws://localhost:8080')
+
+      ws.onopen = () => {
+        clearTimeout(fallbackTimer.current)
+        setConnected(true)
       }
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data)
+          if (data.type === 'SENSOR_UPDATE') {
+            clearTimeout(fallbackTimer.current)
+            clearInterval(demoInterval.current)
+            setDemoMode(false)
+            setConnected(true)
+            setSensorData(data.payload)
+          }
+        } catch (e) {}
+      }
+
+      ws.onerror = () => setConnected(false)
+      ws.onclose = () => setConnected(false)
+    } catch (e) {}
+
+    return () => {
+      clearTimeout(fallbackTimer.current)
+      clearInterval(demoInterval.current)
+      ws && ws.close()
     }
-    
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error)
-      setConnected(false)
-    }
-    
-    ws.onclose = () => {
-      setConnected(false)
-      setTimeout(() => {
-        console.log('Attempting reconnection...')
-      }, 3000)
-    }
-    
-    return () => ws.close()
   }, [])
 
   if (!sensorData) {
@@ -48,7 +91,7 @@ export default function Dashboard() {
             <h1 className="text-5xl font-display font-bold mb-4">
               Real-Time <span style={{ color: '#22c55e' }}>Waste Audit</span> Dashboard
             </h1>
-            <p className="text-lg text-zinc-400">Connecting to live sensor feed...</p>
+            <p className="text-lg text-zinc-400">Connecting to live sensor feed... (demo starts in 10s if offline)</p>
             <div className="mt-8 inline-block">
               <div className="w-12 h-12 rounded-full border-4 border-green-600 border-t-transparent animate-spin mx-auto"></div>
             </div>
@@ -75,8 +118,10 @@ export default function Dashboard() {
             <p className="text-zinc-400">Station: {sensorData.stationId} • Last update: {new Date(sensorData.timestamp).toLocaleTimeString()}</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-            <span className="text-sm text-zinc-400">{connected ? 'Live' : 'Offline'}</span>
+            <div className={`w-3 h-3 rounded-full ${connected ? 'bg-green-500 animate-pulse' : demoMode ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`}></div>
+            <span className="text-sm text-zinc-400">
+              {connected ? 'Live' : demoMode ? 'Demo Mode' : 'Offline'}
+            </span>
           </div>
         </div>
 
